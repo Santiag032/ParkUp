@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "497273598073",
+    "project_id": "parkup-f9a48",
+    "storage_bucket": "parkup-f9a48.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:497273598073:android:af6b9d375f96275887a4a8",
+        "android_client_info": {
+          "package_name": "me.santiagobrito.parkup"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBqq3XEzenTnjb4ueaPcsXeH6RElHJJ3Zk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

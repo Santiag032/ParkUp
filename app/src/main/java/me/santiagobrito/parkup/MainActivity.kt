@@ -11,6 +11,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import com.google.firebase.Firebase
+import com.google.firebase.auth.auth
 import me.santiagobrito.parkup.ui.theme.ParkUpTheme
 
 class MainActivity : ComponentActivity() {
@@ -18,30 +23,50 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            ParkUpTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
-                    )
+            var navController = rememberNavController()
+            var startDestination = "login"
+
+            val auth = Firebase.auth
+            val currentUser = auth.currentUser
+
+            if (currentUser != null){
+                startDestination = "home"
+            }else{
+                startDestination = "login"
+            }
+
+            NavHost(
+                navController = navController,
+                startDestination = startDestination,
+                modifier = Modifier.fillMaxSize()
+            ) {
+                composable(route = "login") {
+                    LoginScreen(onClickRegister = {
+                        navController.navigate("register")
+                    }, onSuccessfulLogin = {
+                        navController.navigate("home"){
+                            popUpTo("login"){inclusive = true}
+                        }
+                    })
+                }
+                composable(route = "register") {
+                    RegisterScreen(onClickBack = {
+                        navController.popBackStack()
+                    }, onSuccessfulRegister = {
+                        navController.navigate("home"){
+                            popUpTo(0)
+                        }
+                    })
+                }
+                composable(route = "home") {
+                    HomeScreen(onClickLogout = {
+                        navController.navigate("login"){
+                            popUpTo(0)
+                        }
+                    })
                 }
             }
         }
     }
 }
 
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    ParkUpTheme {
-        Greeting("Android")
-    }
-}

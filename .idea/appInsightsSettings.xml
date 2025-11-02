@@ -8,10 +8,10 @@
             <InsightsFilterSettings>
               <option name="connection">
                 <ConnectionSetting>
-                  <option name="appId" value="PLACEHOLDER" />
-                  <option name="mobileSdkAppId" value="" />
-                  <option name="projectId" value="" />
-                  <option name="projectNumber" value="" />
+                  <option name="appId" value="me.santiagobrito.parkup" />
+                  <option name="mobileSdkAppId" value="1:497273598073:android:af6b9d375f96275887a4a8" />
+                  <option name="projectId" value="parkup-f9a48" />
+                  <option name="projectNumber" value="497273598073" />
                 </ConnectionSetting>
               </option>
               <option name="signal" value="SIGNAL_UNSPECIFIED" />
