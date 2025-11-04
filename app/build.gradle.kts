@@ -66,4 +66,9 @@ dependencies {
     implementation(libs.firebase.bom)
     //auth
     implementation(libs.firebase.auth)
+
+    // Google cloud
+    implementation("com.google.android.gms:play-services-maps:18.2.0")
+    implementation("com.google.maps.android:maps-compose:4.4.1")
+
 }

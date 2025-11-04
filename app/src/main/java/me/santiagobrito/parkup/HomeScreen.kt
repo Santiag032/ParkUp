@@ -25,8 +25,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.sp
+import com.google.android.gms.maps.model.CameraPosition
+import com.google.android.gms.maps.model.LatLng
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
+import com.google.maps.android.compose.GoogleMap
+import com.google.maps.android.compose.Marker
+import com.google.maps.android.compose.MarkerState
+import com.google.maps.android.compose.rememberCameraPositionState
 
 
 @Preview
@@ -36,57 +42,47 @@ fun HomeScreen(onClickLogout: () -> Unit = {}) {
     val auth = Firebase.auth
     val user = auth.currentUser
 
-    Scaffold(topBar = {
-        MediumTopAppBar(
-            title = {
-            Text(
-                "ParkUp", fontWeight = FontWeight.Bold, fontSize = 28.sp
-            )
-        }, actions = {
-            IconButton(onClick = { }) {
-                Icon(Icons.Filled.Notifications, "Notificaciones")
-            }
+    val bucaramanga = LatLng(7.119349, -73.122741)
+    val cameraPositionState = rememberCameraPositionState {
+        position = CameraPosition.fromLatLngZoom(bucaramanga, 14f)
+    }
 
-            IconButton(onClick = { }) {
-                Icon(Icons.AutoMirrored.Filled.ExitToApp, "Exit")
-            }
-        },
-
-            colors = TopAppBarDefaults.mediumTopAppBarColors(
-                containerColor = Color(0xFF3B82F6),
-                titleContentColor = Color.White,
-                actionIconContentColor = Color.White
+    Scaffold(
+        topBar = {
+            MediumTopAppBar(
+                title = {
+                    Text("ParkUp", fontWeight = FontWeight.Bold, fontSize = 28.sp)
+                },
+                actions = {
+                    IconButton(onClick = { }) {
+                        Icon(Icons.Filled.Notifications, "Notificaciones")
+                    }
+                    IconButton(onClick = {
+                        auth.signOut()
+                        onClickLogout()
+                    }) {
+                        Icon(Icons.AutoMirrored.Filled.ExitToApp, "Salir")
+                    }
+                },
+                colors = TopAppBarDefaults.mediumTopAppBarColors(
+                    containerColor = Color(0xFF3B82F6),
+                    titleContentColor = Color.White,
+                    actionIconContentColor = Color.White
+                )
             )
-        )
-    }, bottomBar = {}) { paddingValues ->
-        Column(
+        }
+    ) { paddingValues ->
+        GoogleMap(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color(0xFFF5F5F5))
-                .padding(paddingValues)
+                .padding(paddingValues),
+            cameraPositionState = cameraPositionState
         ) {
-            Column(
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text("HOME SCREEN", fontSize = 30.sp)
-
-                if(user != null){
-                    Text(user.email.toString())
-                }else{
-                    Text("No hay usuario ")
-                }
-                Button(onClick = {
-                    auth.signOut()
-                    onClickLogout()
-                },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF3B82F6)
-                    ) ) {
-                    Text("Cerrar Sesión")
-                }
-            }
+            Marker(
+                state = MarkerState(position = bucaramanga),
+                title = "Bucaramanga",
+                snippet = "Ubicación principal"
+            )
         }
     }
 }
