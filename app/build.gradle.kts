@@ -71,4 +71,24 @@ dependencies {
     implementation("com.google.android.gms:play-services-maps:18.2.0")
     implementation("com.google.maps.android:maps-compose:4.4.1")
 
+
+        // Ubicación
+    implementation ("com.google.android.gms:play-services-location:21.3.0")
+
+        // Maps Compose (si no la tienes ya)
+    implementation ("com.google.maps.android:maps-compose:4.3.3")
+
+        // Utils (para decodificar polilíneas, etc.)
+    implementation ("com.google.maps.android:maps-utils-ktx:5.1.1")
+
+        // Coroutines + Tasks (para await() en FusedLocation)
+    implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
+    implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.8.1")
+
+        // OkHttp para llamar a la Directions API
+    implementation ("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation ("com.squareup.okhttp3:logging-interceptor:4.12.0")
+
+
+
 }
