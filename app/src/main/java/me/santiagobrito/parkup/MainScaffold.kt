@@ -16,12 +16,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.google.firebase.Firebase
+import com.google.firebase.auth.auth
 
 
 data class BottomItem(
@@ -34,7 +35,6 @@ data class BottomItem(
 fun MainScaffold(mapsApiKey: String) {
     val navController = rememberNavController()
 
-    // Cambia los drawables por los tuyos
     val items = listOf(
         BottomItem("home",     "Inicio",  R.drawable.ic_home),
         BottomItem("payments", "Pagos",   R.drawable.ic_payments),
@@ -42,7 +42,7 @@ fun MainScaffold(mapsApiKey: String) {
     )
 
     Scaffold(
-        containerColor = GrayM  ,
+        containerColor = GrayM,
         bottomBar = {
             val backEntry by navController.currentBackStackEntryAsState()
             BottomBar(
@@ -60,20 +60,52 @@ fun MainScaffold(mapsApiKey: String) {
             )
         }
     ) { innerPadding ->
-        // Las pantallas se dibujan dentro del scaffold y respetan el padding inferior de la barra
+
         NavHost(
             navController = navController,
             startDestination = "home",
             modifier = Modifier.padding(innerPadding)
         ) {
             composable("home") {
-                // Tu mapa de siempre
                 HomeScreen(
                     paddingValues = innerPadding,
                     mapsApiKey = mapsApiKey
                 )
             }
-            composable("payments") { PaymentsScreen() }   // crea tu UI de pagos aquí
+
+            composable("payments") {
+                PaymentsScreen(
+                    daysLeft = 20,
+                    balance = 38000,
+                    onMonthly = { navController.navigate("payments/monthly") },
+                    onRecharge = { navController.navigate("payments/recharge") },
+                    onHistory  = { navController.navigate("payments/history") }
+                )
+            }
+            composable("payments/monthly") {
+                MonthlyPaymentScreeen(
+                    currentPlan = "Mensualidad vehículo",
+                    price = 120000,
+                    dueInDays = 20,
+                    onBack = { navController.popBackStack() },
+                    onSelectMethod = { navController.navigate("payments/methods") }
+                )
+            }
+            composable("payments/recharge") {
+                RechargeBalanceScreen(
+                    currentBalance = 38000,
+                    onBack = { navController.popBackStack() },
+                    onSelectMethod = { navController.navigate("payments/methods") }
+                )
+            }
+            composable("payments/history") {
+                PaymentHistoryScreen(onBack = { navController.popBackStack() })
+            }
+            composable("payments/methods") {
+                PaymentMethodsSheet(onBack = { navController.popBackStack() })
+            }
+
+
             composable("profile") {
                 ProfileScreen(
                     name = "Usuario",
@@ -82,12 +114,23 @@ fun MainScaffold(mapsApiKey: String) {
                     daysLeft = 20,
                     appVersion = "1.0.0",
                     onEdit = { /*  */ },
-                    onLogout = { /*  */ }
+                    onLogout = {
+                        Firebase.auth.signOut()
+
+                        navController.navigate("home") {
+                            popUpTo(navController.graph.findStartDestination().id) {
+                                inclusive = true
+                            }
+                            launchSingleTop = true
+                        }
+                    }
                 )
             }
         }
     }
 }
+
+
 
 @Composable
 private fun BottomBar(
@@ -98,7 +141,7 @@ private fun BottomBar(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(60.dp)              // altura controlada (más baja)
+            .height(60.dp)
             .background(Blue)
             .padding(horizontal = 28.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -112,7 +155,7 @@ private fun BottomBar(
                     contentDescription = item.label,
                     modifier = Modifier
                         .size(26.dp)
-                        .alpha(if (selected) 1f else 0.82f) // leve diferencia
+                        .alpha(if (selected) 1f else 0.82f)
                 )
             }
         }
