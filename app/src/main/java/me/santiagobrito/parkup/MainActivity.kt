@@ -24,52 +24,49 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
         setContent {
-            var navController = rememberNavController()
-            var startDestination = "login"
-
-            val auth = Firebase.auth
-            val currentUser = auth.currentUser
+            val navController = rememberNavController()
             val mapsKey = getString(R.string.google_maps_key)
+            val currentUser = Firebase.auth.currentUser
 
-            if (currentUser != null){
-                startDestination = "home"
-            }else{
-                startDestination = "login"
-            }
+            val start = if (currentUser != null) "main" else "login"
 
             NavHost(
                 navController = navController,
-                startDestination = startDestination,
+                startDestination = start,
                 modifier = Modifier.fillMaxSize()
             ) {
-                composable(route = "login") {
-                    LoginScreen(onClickRegister = {
-                        navController.navigate("register")
-                    }, onSuccessfulLogin = {
-                        navController.navigate("home"){
-                            popUpTo("login"){inclusive = true}
+                // ---------- Auth ----------
+                composable("login") {
+                    LoginScreen(
+                        onClickRegister = { navController.navigate("register") },
+                        onSuccessfulLogin = {
+                            navController.navigate("main") {
+                                popUpTo("login") { inclusive = true }
+                                launchSingleTop = true
+                            }
                         }
-                    })
-                }
-                composable(route = "register") {
-                    RegisterScreen(onClickBack = {
-                        navController.popBackStack()
-                    }, onSuccessfulRegister = {
-                        navController.navigate("home"){
-                            popUpTo(0)
-                        }
-                    })
-                }
-                composable(route = "home") {
-
-                    HomeScreen(
-                        paddingValues = PaddingValues(0.dp),
-                        mapsApiKey = mapsKey
                     )
+                }
+                composable("register") {
+                    RegisterScreen(
+                        onClickBack = { navController.popBackStack() },
+                        onSuccessfulRegister = {
+                            navController.navigate("main") {
+                                popUpTo("register") { inclusive = true }
+                                launchSingleTop = true
+                            }
+                        }
+                    )
+                }
+
+                // ---------- App con Bottom Nav ----------
+                composable("main") {
+                    MainScaffold(mapsApiKey = mapsKey)
+                }
             }
         }
     }
-}
 }
 

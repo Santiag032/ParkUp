@@ -57,7 +57,7 @@ fun  ProfileScreen(
             modifier = Modifier
                 .size(88.dp)
                 .clip(CircleShape)
-                .background(Color(0xFFE5E7EB))
+                .background(Color(0xFF3B82F6))
                 .align(Alignment.CenterHorizontally)
 
         )

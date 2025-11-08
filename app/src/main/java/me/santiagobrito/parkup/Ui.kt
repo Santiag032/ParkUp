@@ -3,6 +3,8 @@ package me.santiagobrito.parkup
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -47,30 +49,27 @@ fun PrimaryButton(text: String, modifier: Modifier = Modifier, onClick: ()-> Uni
 
 @Composable
 
-fun DangerButton(text: String, modifier: Modifier = Modifier, onClick: () -> Unit){
-    Surface(
-        modifier = modifier
-            .fillMaxHeight()
-            .height(48.dp),
+fun DangerButton(
+    text: String,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    Button(
         onClick = onClick,
-        color = Red,
-        shape = RoundedCornerShape(12.dp)
-
-
-
+        modifier = modifier
+            .fillMaxWidth()
+            .height(48.dp),                 // << altura fija
+        shape = RoundedCornerShape(12.dp),
+        colors = ButtonDefaults.buttonColors(containerColor = Red)
     ) {
-        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text(text, color = White, fontWeight = FontWeight.SemiBold)
-
-        }
-
-
-
-
+        Text(text, color = White, fontWeight = FontWeight.SemiBold)
     }
+}
     //Cards
     @Composable
-    fun InfoPill(text: String, modifier: Modifier = Modifier) {
+    fun String.InfoPill(
+        modifier: Modifier = Modifier
+    ) {
         Box(
             modifier = modifier
                 .fillMaxWidth()
@@ -79,7 +78,7 @@ fun DangerButton(text: String, modifier: Modifier = Modifier, onClick: () -> Uni
                 .padding(vertical = 16.dp, horizontal = 20.dp),
             contentAlignment = Alignment.Center
         ) {
-            Text(text, color = GrayDark, fontWeight = FontWeight.Bold)
+            Text(this@InfoPill, color = GrayDark, fontWeight = FontWeight.Bold)
         }
     }
     //Cards Stadistics
@@ -108,7 +107,7 @@ fun DangerButton(text: String, modifier: Modifier = Modifier, onClick: () -> Uni
             }
         }
     }
-}
+
 private fun Modifier.borderIf(condition: Boolean, color: Color) =
     if (condition) this.then(Modifier
         .background(White)
