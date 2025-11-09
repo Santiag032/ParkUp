@@ -63,8 +63,21 @@ class MainActivity : ComponentActivity() {
 
                 // ---------- App con Bottom Nav ----------
                 composable("main") {
-                    MainScaffold(mapsApiKey = mapsKey)
+                    MainScaffold(
+                        mapsApiKey = mapsKey,
+                        onLogout = {
+                            // 1. Cerrar sesión en Firebase
+                            Firebase.auth.signOut()
+
+                            // 2. Ir al login y sacar "main" del back stack
+                            navController.navigate("login") {
+                                popUpTo("main") { inclusive = true }
+                                launchSingleTop = true
+                            }
+                        }
+                    )
                 }
+
             }
         }
     }

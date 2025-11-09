@@ -1,4 +1,4 @@
-package me.santiagobrito.parkup
+            package me.santiagobrito.parkup
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer

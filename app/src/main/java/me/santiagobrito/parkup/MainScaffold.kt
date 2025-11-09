@@ -8,9 +8,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.*
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -24,7 +28,6 @@ import androidx.navigation.compose.rememberNavController
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 
-
 data class BottomItem(
     val route: String,
     val label: String,
@@ -32,13 +35,21 @@ data class BottomItem(
 )
 
 @Composable
-fun MainScaffold(mapsApiKey: String) {
+fun MainScaffold(
+    mapsApiKey: String,
+    onLogout: () -> Unit
+) {
     val navController = rememberNavController()
 
+    val firebaseUser = Firebase.auth.currentUser
+    var userName by rememberSaveable { mutableStateOf(firebaseUser?.displayName ?: "Usuario") }
+    var userPhone by rememberSaveable { mutableStateOf("") }
+    val userEmail = firebaseUser?.email ?: "usuario@test.com"
+
     val items = listOf(
-        BottomItem("home",     "Inicio",  R.drawable.ic_home),
-        BottomItem("payments", "Pagos",   R.drawable.ic_payments),
-        BottomItem("profile",  "Perfil",  R.drawable.ic_profile)
+        BottomItem("home", "Inicio", R.drawable.ic_home),
+        BottomItem("payments", "Pagos", R.drawable.ic_payments),
+        BottomItem("profile", "Perfil", R.drawable.ic_profile)
     )
 
     Scaffold(
@@ -79,7 +90,7 @@ fun MainScaffold(mapsApiKey: String) {
                     balance = 38000,
                     onMonthly = { navController.navigate("payments/monthly") },
                     onRecharge = { navController.navigate("payments/recharge") },
-                    onHistory  = { navController.navigate("payments/history") }
+                    onHistory = { navController.navigate("payments/history") }
                 )
             }
             composable("payments/monthly") {
@@ -105,32 +116,34 @@ fun MainScaffold(mapsApiKey: String) {
                 PaymentMethodsSheet(onBack = { navController.popBackStack() })
             }
 
-
             composable("profile") {
                 ProfileScreen(
-                    name = "Usuario",
-                    email = "usuario@test.com",
+                    name = userName,
+                    email = userEmail,
                     isAdmin = false,
                     daysLeft = 20,
                     appVersion = "1.0.0",
-                    onEdit = { /*  */ },
-                    onLogout = {
-                        Firebase.auth.signOut()
+                    onEdit = { navController.navigate("editProfile") },
+                    onLogout = onLogout
+                )
+            }
 
-                        navController.navigate("home") {
-                            popUpTo(navController.graph.findStartDestination().id) {
-                                inclusive = true
-                            }
-                            launchSingleTop = true
-                        }
+            composable("editProfile") {
+                EditProfileScreen(
+                    initialName = userName,
+                    initialEmail = userEmail,
+                    initialPhone = userPhone,
+                    onBack = { navController.popBackStack() },
+                    onSave = { name, phone ->
+                        userName = name
+                        userPhone = phone
+                        navController.popBackStack()
                     }
                 )
             }
         }
     }
 }
-
-
 
 @Composable
 private fun BottomBar(
