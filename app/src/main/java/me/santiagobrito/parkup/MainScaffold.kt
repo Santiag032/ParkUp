@@ -51,6 +51,7 @@ fun MainScaffold(
 
     val items = listOf(
         BottomItem("home", "Inicio", R.drawable.ic_home),
+        BottomItem( "calendar","Calendario", R.drawable.baseline_calendar_month_24),
         BottomItem("payments", "Pagos", R.drawable.ic_payments),
         BottomItem("profile", "Perfil", R.drawable.ic_profile)
     )
@@ -89,7 +90,7 @@ fun MainScaffold(
             }
 
 
-
+            composable("calendar") { CalendarScreen() }
 
             //  Agregar parqueadero
             composable("addParking") {
@@ -109,6 +110,9 @@ fun MainScaffold(
                     onHistory = { navController.navigate("payments/history") }
                 )
             }
+
+
+
 
             composable("payments/monthly") {
                 MonthlyPaymentScreen(
