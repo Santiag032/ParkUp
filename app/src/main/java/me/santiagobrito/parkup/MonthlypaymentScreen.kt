@@ -21,7 +21,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun MonthlyPaymentScreeen(
+fun MonthlyPaymentScreen(
     currentPlan: String,
     price: Int,
     dueInDays: Int,

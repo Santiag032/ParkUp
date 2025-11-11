@@ -1,63 +1,68 @@
-@file:OptIn(ExperimentalMaterial3Api::class)
+@file:Suppress("MissingPermission")
 
 package me.santiagobrito.parkup
 
 import android.Manifest
-import android.location.Geocoder
-import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
-import com.google.android.gms.maps.model.LatLngBounds
-import com.google.maps.android.compose.*
+import com.google.maps.android.compose.GoogleMap
+import com.google.maps.android.compose.MapProperties
+import com.google.maps.android.compose.MapUiSettings
+import com.google.maps.android.compose.Marker
+import com.google.maps.android.compose.MarkerState
+import com.google.maps.android.compose.rememberCameraPositionState
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
-import me.santiagobrito.parkup.DirectionsClient
-import java.util.Locale
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     paddingValues: PaddingValues,
-    mapsApiKey: String
+    mapsApiKey: String,
+    onAddParking: () -> Unit
+
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
     var hasLocation by remember { mutableStateOf(false) }
     var myLocation by remember { mutableStateOf<LatLng?>(null) }
-    var destinoTexto by remember { mutableStateOf("") }
-    var destinoLatLng by remember { mutableStateOf<LatLng?>(null) }
-    var ruta by remember { mutableStateOf<List<LatLng>>(emptyList()) }
+
+    // parqueaderos desde Firestore
+    var parkings by remember { mutableStateOf<List<ParkingSpot>>(emptyList()) }
+
+    // búsqueda
+    var search by remember { mutableStateOf("") }
+    var showResults by remember { mutableStateOf(false) }
 
     val fused = remember { LocationServices.getFusedLocationProviderClient(context) }
     val cameraPositionState = rememberCameraPositionState {
-        position = CameraPosition.fromLatLngZoom(LatLng(7.1193, -73.1227), 12f) // Bucaramanga por defecto
+        position = CameraPosition.fromLatLngZoom(LatLng(7.1193, -73.1227), 12f)
     }
 
-    // --- Permisos de ubicación ---
-    val permisos = arrayOf(
-        Manifest.permission.ACCESS_FINE_LOCATION,
-        Manifest.permission.ACCESS_COARSE_LOCATION
-    )
-
+    // Permisos ubicación
     val permisosLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { granted ->
-        hasLocation = granted[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
-                granted[Manifest.permission.ACCESS_COARSE_LOCATION] == true
-        // Si se conceden, centra en la ubicación actual
+        hasLocation =
+            granted[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
+                    granted[Manifest.permission.ACCESS_COARSE_LOCATION] == true
+
         if (hasLocation) {
             scope.launch {
                 val loc = fused.lastLocation.await()
@@ -72,94 +77,100 @@ fun HomeScreen(
         }
     }
 
-    LaunchedEffect(Unit) { permisosLauncher.launch(permisos) }
-
-    // --- Buscar dirección, obtener ruta y ajustar cámara ---
-    fun geocodificarYRuta() {
-        scope.launch {
-            val origen = myLocation ?: run {
-                permisosLauncher.launch(permisos); return@launch
-            }
-            // Geocoder simple (sin Places)
-            val geocoder = Geocoder(context, Locale.getDefault())
-            val dest = try {
-                val list = if (Build.VERSION.SDK_INT >= 33) {
-                    geocoder.getFromLocationName(destinoTexto, 1)
-                } else {
-                    @Suppress("DEPRECATION")
-                    geocoder.getFromLocationName(destinoTexto, 1)
-                }
-                list?.firstOrNull()?.let { LatLng(it.latitude, it.longitude) }
-            } catch (_: Exception) { null }
-
-            if (dest == null) {
-                // Aquí podrías mostrar un Snackbar de “No se encontró la dirección”
-                return@launch
-            }
-
-            destinoLatLng = dest
-
-            val result = DirectionsClient.fetchRoute(
-                origin = origen,
-                destination = dest,
-                apiKey = mapsApiKey
+    LaunchedEffect(Unit) {
+        permisosLauncher.launch(
+            arrayOf(
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.ACCESS_COARSE_LOCATION
             )
-            ruta = result?.path ?: emptyList()
+        )
+    }
 
-            // Ajustar cámara para ver origen + ruta + destino
-            val builder = LatLngBounds.Builder().include(origen).include(dest)
-            ruta.forEach { builder.include(it) }
-            val bounds = try { builder.build() } catch (_: Exception) { null }
-
-            if (bounds != null) {
-                cameraPositionState.animate(
-                    CameraUpdateFactory.newLatLngBounds(bounds, 120),
-                    800
-                )
-            } else {
-                cameraPositionState.animate(
-                    CameraUpdateFactory.newLatLngZoom(dest, 14f),
-                    600
-                )
-            }
+    // Escuchar parqueaderos
+    LaunchedEffect(Unit) {
+        ParkingRepository.listenParkings { list ->
+            parkings = list
         }
     }
 
-    // --- UI ---
+    val filtered = remember(search, parkings) {
+        if (search.isBlank()) parkings
+        else parkings.filter {
+            (it.name + " " + it.address)
+                .contains(search.trim(), ignoreCase = true)
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(paddingValues)
     ) {
-        Row(
+        // Buscar parqueaderos
+        OutlinedTextField(
+            value = search,
+            onValueChange = {
+                search = it
+                showResults = true
+            },
+            label = { Text("Buscar parqueaderos") },
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(12.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            OutlinedTextField(
-                value = destinoTexto,
-                onValueChange = { destinoTexto = it },
-                label = { Text("¿A dónde vamos?") },
-                placeholder = { Text("Escribe una dirección o lugar") },
-                singleLine = true,
-                modifier = Modifier.weight(1f),
-                keyboardOptions = KeyboardOptions.Default.copy(
-                    imeAction = ImeAction.Search
-                ),
-                keyboardActions = KeyboardActions(
-                    onSearch = { geocodificarYRuta() }
-                )
-            )
+            singleLine = true
+        )
 
-            Button(
-                onClick = { geocodificarYRuta() },
-                enabled = destinoTexto.isNotBlank()
-            ) { Text("Ir") }
+        // Lista de resultados (simple, debajo del buscador)
+        if (showResults && filtered.isNotEmpty()) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp)
+            ) {
+                Column {
+                    filtered.forEach { spot ->
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    showResults = false
+                                    search = spot.name.ifBlank { spot.address }
+
+                                    val target = LatLng(spot.latitude, spot.longitude)
+                                    scope.launch {
+                                        cameraPositionState.animate(
+                                            CameraUpdateFactory.newLatLngZoom(target, 17f),
+                                            600
+                                        )
+                                    }
+                                }
+                                .padding(8.dp)
+                        ) {
+                            Text(text = spot.name.ifBlank { spot.address })
+                            if (spot.name.isNotBlank()) {
+                                Text(text = spot.address)
+                            }
+                        }
+                    }
+                }
+            }
         }
 
+        // Botón agregar parqueadero
+        Button(
+            onClick = onAddParking,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 8.dp)
+        ) {
+            Text("Agregar parqueadero")
+        }
+
+        // Mapa con marcadores
         GoogleMap(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(top = 4.dp),
             cameraPositionState = cameraPositionState,
             properties = MapProperties(isMyLocationEnabled = hasLocation),
             uiSettings = MapUiSettings(
@@ -168,14 +179,22 @@ fun HomeScreen(
             )
         ) {
             myLocation?.let {
-                Marker(state = MarkerState(position = it), title = "Mi ubicación")
+                Marker(
+                    state = MarkerState(position = it),
+                    title = "Mi ubicación"
+                )
             }
-            destinoLatLng?.let {
-                Marker(state = MarkerState(position = it), title = "Destino")
-            }
-            if (ruta.isNotEmpty()) {
-                Polyline(points = ruta, width = 10f)
+
+            parkings.forEach { spot ->
+                if (spot.latitude != 0.0 || spot.longitude != 0.0) {
+                    Marker(
+                        state = MarkerState(LatLng(spot.latitude, spot.longitude)),
+                        title = spot.name.ifBlank { "Parqueadero" },
+                        snippet = spot.address
+                    )
+                }
             }
         }
     }
 }
+

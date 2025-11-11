@@ -27,6 +27,8 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
+import me.santiagobrito.parkup.MonthlyPaymentScreen
+
 
 data class BottomItem(
     val route: String,
@@ -38,7 +40,8 @@ data class BottomItem(
 fun MainScaffold(
     mapsApiKey: String,
     onLogout: () -> Unit
-) {
+)
+ {
     val navController = rememberNavController()
 
     val firebaseUser = Firebase.auth.currentUser
@@ -53,7 +56,6 @@ fun MainScaffold(
     )
 
     Scaffold(
-        containerColor = GrayM,
         bottomBar = {
             val backEntry by navController.currentBackStackEntryAsState()
             BottomBar(
@@ -77,13 +79,25 @@ fun MainScaffold(
             startDestination = "home",
             modifier = Modifier.padding(innerPadding)
         ) {
+            // 🏠 Home: mapa + botón para agregar parqueadero
             composable("home") {
                 HomeScreen(
                     paddingValues = innerPadding,
-                    mapsApiKey = mapsApiKey
+                    mapsApiKey = mapsApiKey,
+                    onAddParking = { navController.navigate("addParking") }
                 )
             }
 
+
+            // ➕ Agregar parqueadero
+            composable("addParking") {
+                AddParkingScreen(
+                    onBack = { navController.popBackStack() },
+                    onSaved = { navController.popBackStack() }
+                )
+            }
+
+            // 💳 Pagos (dejas tus pantallas como ya las tenías)
             composable("payments") {
                 PaymentsScreen(
                     daysLeft = 20,
@@ -93,8 +107,9 @@ fun MainScaffold(
                     onHistory = { navController.navigate("payments/history") }
                 )
             }
+
             composable("payments/monthly") {
-                MonthlyPaymentScreeen(
+                MonthlyPaymentScreen(
                     currentPlan = "Mensualidad vehículo",
                     price = 120000,
                     dueInDays = 20,
@@ -102,6 +117,7 @@ fun MainScaffold(
                     onSelectMethod = { navController.navigate("payments/methods") }
                 )
             }
+
             composable("payments/recharge") {
                 RechargeBalanceScreen(
                     currentBalance = 38000,
@@ -109,13 +125,20 @@ fun MainScaffold(
                     onSelectMethod = { navController.navigate("payments/methods") }
                 )
             }
+
             composable("payments/history") {
-                PaymentHistoryScreen(onBack = { navController.popBackStack() })
-            }
-            composable("payments/methods") {
-                PaymentMethodsSheet(onBack = { navController.popBackStack() })
+                PaymentHistoryScreen(
+                    onBack = { navController.popBackStack() }
+                )
             }
 
+            composable("payments/methods") {
+                PaymentMethodsSheet(
+                    onBack = { navController.popBackStack() }
+                )
+            }
+
+            // 👤 Perfil
             composable("profile") {
                 ProfileScreen(
                     name = userName,
@@ -155,7 +178,7 @@ private fun BottomBar(
         modifier = Modifier
             .fillMaxWidth()
             .height(60.dp)
-            .background(Blue)
+            .background(Blue) // Usa tu color definido en Theme
             .padding(horizontal = 28.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
