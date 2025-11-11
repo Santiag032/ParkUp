@@ -1,61 +1,47 @@
 package me.santiagobrito.parkup
 
+import com.google.firebase.Firebase
+import com.google.firebase.auth.auth
+import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.ktx.firestore
-import com.google.firebase.ktx.Firebase
+import com.google.firebase.ktx.Firebase as KtxFirebase // para firestore()
 
 object ParkingRepository {
 
-    private const val COLLECTION = "parkings"
-    private val db = Firebase.firestore
+    private val auth = Firebase.auth
+    private val db = KtxFirebase.firestore
 
-    fun addParking(spot: ParkingSpot, onResult: (Boolean) -> Unit) {
-        // Guardamos como mapa simple
-        val data = hashMapOf(
-            "name" to spot.name,
-            "address" to spot.address,
-            "pricePerHour" to spot.pricePerHour,
-            "openingTime" to spot.openingTime,
-            "closingTime" to spot.closingTime,
-            "latitude" to spot.latitude,
-            "longitude" to spot.longitude
-        )
+    // Guarda en /parkings/{uid}/parkings/{autoId}
+    fun addParking(parking: ParkingSpot, onResult: (Boolean) -> Unit) {
+        val user = auth.currentUser
+        if (user == null) {
+            onResult(false)
+            return
+        }
 
-        db.collection(COLLECTION)
-            .add(data)
+        db.collection("parkings")
+            .document(user.uid)
+            .collection("parkings")
+            .add(parking)
             .addOnSuccessListener { onResult(true) }
             .addOnFailureListener { onResult(false) }
     }
 
-    fun listenParkings(onChange: (List<ParkingSpot>) -> Unit) {
-        db.collection(COLLECTION)
-            .addSnapshotListener { snapshot, error ->
-                if (error != null || snapshot == null) {
+    // Lee TODOS los documentos de cualquier subcolección "parkings"
+    fun listenAllParkings(onChange: (List<ParkingSpot>) -> Unit): ListenerRegistration {
+        return db.collectionGroup("parkings")
+            .addSnapshotListener { snap, e ->
+                if (e != null || snap == null) {
                     onChange(emptyList())
                     return@addSnapshotListener
                 }
 
-                val list = snapshot.documents.mapNotNull { doc ->
-                    val name = doc.getString("name") ?: ""
-                    val address = doc.getString("address") ?: return@mapNotNull null
-                    val price = doc.getDouble("pricePerHour") ?: 0.0
-                    val opening = doc.getString("openingTime") ?: ""
-                    val closing = doc.getString("closingTime") ?: ""
-                    val lat = doc.getDouble("latitude") ?: return@mapNotNull null
-                    val lng = doc.getDouble("longitude") ?: return@mapNotNull null
-
-                    ParkingSpot(
-                        id = doc.id,
-                        name = name,
-                        address = address,
-                        pricePerHour = price,
-                        openingTime = opening,
-                        closingTime = closing,
-                        latitude = lat,
-                        longitude = lng
-                    )
+                val list = snap.documents.mapNotNull { doc ->
+                    doc.toObject(ParkingSpot::class.java)?.copy(id = doc.id)
                 }
 
                 onChange(list)
             }
     }
 }
+

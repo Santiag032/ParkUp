@@ -8,5 +8,6 @@ data class ParkingSpot(
     val openingTime: String = "",
     val closingTime: String = "",
     val latitude: Double = 0.0,
-    val longitude: Double = 0.0
+    val longitude: Double = 0.0,
+
 )

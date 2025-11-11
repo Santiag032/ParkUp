@@ -79,7 +79,7 @@ fun MainScaffold(
             startDestination = "home",
             modifier = Modifier.padding(innerPadding)
         ) {
-            // 🏠 Home: mapa + botón para agregar parqueadero
+
             composable("home") {
                 HomeScreen(
                     paddingValues = innerPadding,
@@ -89,7 +89,9 @@ fun MainScaffold(
             }
 
 
-            // ➕ Agregar parqueadero
+
+
+            //  Agregar parqueadero
             composable("addParking") {
                 AddParkingScreen(
                     onBack = { navController.popBackStack() },
@@ -97,7 +99,7 @@ fun MainScaffold(
                 )
             }
 
-            // 💳 Pagos (dejas tus pantallas como ya las tenías)
+            // Pagos (dejas tus pantallas como ya las tenías)
             composable("payments") {
                 PaymentsScreen(
                     daysLeft = 20,
@@ -138,7 +140,7 @@ fun MainScaffold(
                 )
             }
 
-            // 👤 Perfil
+            // Perfil
             composable("profile") {
                 ProfileScreen(
                     name = userName,
