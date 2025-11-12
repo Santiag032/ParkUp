@@ -71,7 +71,6 @@ fun MainScaffold(
             startDestination = "home",
             modifier = Modifier.padding(innerPadding)
         ) {
-
             // HOME
             composable("home") {
                 HomeScreen(
@@ -92,12 +91,30 @@ fun MainScaffold(
                 )
             }
 
-            // --- PAGOS ---
+            // --- PAGOS (pantalla principal) ---
             composable("payments") {
                 PaymentScreen(
-                    navigateToTopUp = { navController.navigate("topup") },
+                    navigateToTopUp   = { navController.navigate("topup") },
                     navigateToHistory = { navController.navigate("payments/history") },
-                    openMonthlyMethods = { price ->
+                    navigateToMonthly = { navController.navigate("payments/monthly") }
+                )
+            }
+
+            // --- PANTALLA INTERMEDIA: Pagar mensualidad ---
+            composable("payments/monthly") {
+                val dueDays = if (FakeWallet.planExpiresAt == 0L) 20
+                else (((FakeWallet.planExpiresAt - System.currentTimeMillis())
+                        / TimeUnit.DAYS.toMillis(1)).toInt().coerceAtLeast(0))
+
+                val price = 120_000
+
+                MonthlyPaymentScreen(
+                    currentPlan    = "Mensualidad vehículo",
+                    price          = price,
+                    dueInDays      = dueDays,
+                    onBack         = { navController.popBackStack() },
+                    onSelectMethod = {
+                        // ahora sí vamos a la pantalla de métodos
                         navController.navigate("paymethods/monthly/$price")
                     }
                 )
@@ -127,7 +144,6 @@ fun MainScaffold(
                 PaymentMethodScreen(
                     onBack = { navController.popBackStack() },
                     onSelect = { method ->
-                        // Recarga “demo”
                         FakeWallet.balance += amount
                         FakePayments.events.add(
                             PaymentEvent(type = "TOPUP", method = method, amount = amount)
@@ -146,7 +162,6 @@ fun MainScaffold(
                 PaymentMethodScreen(
                     onBack = { navController.popBackStack() },
                     onSelect = { method ->
-                        // Extiende plan +30 días (demo) y registra en historial
                         val base = max(System.currentTimeMillis(), FakeWallet.planExpiresAt)
                         FakeWallet.planExpiresAt = base + TimeUnit.DAYS.toMillis(30)
                         FakePayments.events.add(
@@ -198,7 +213,7 @@ private fun BottomBar(
         modifier = Modifier
             .fillMaxWidth()
             .height(60.dp)
-            .background(Blue) // tu color de tema
+            .background(Blue)
             .padding(horizontal = 28.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically

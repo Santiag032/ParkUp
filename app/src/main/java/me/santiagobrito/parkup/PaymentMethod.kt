@@ -56,7 +56,7 @@ fun PaymentMethodScreen(
             }
             Spacer(Modifier.height(24.dp))
             Text(
-                text = "Selecciona un método para continuar. (Integración real se hace luego)",
+                text = "Selecciona un método para continuar.",
                 color = Color(0xFF666666),
                 style = MaterialTheme.typography.bodySmall
             )

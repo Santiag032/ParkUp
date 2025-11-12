@@ -126,9 +126,13 @@ fun EditProfileScreen(
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(8.dp)
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Blue
+                )
             ) {
                 Text("Guardar cambios")
+
             }
         }
     }
