@@ -2,19 +2,11 @@ package me.santiagobrito.parkup
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -25,10 +17,12 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
-import me.santiagobrito.parkup.MonthlyPaymentScreen
-
+import java.util.concurrent.TimeUnit
+import kotlin.math.max
 
 data class BottomItem(
     val route: String,
@@ -40,8 +34,7 @@ data class BottomItem(
 fun MainScaffold(
     mapsApiKey: String,
     onLogout: () -> Unit
-)
- {
+) {
     val navController = rememberNavController()
 
     val firebaseUser = Firebase.auth.currentUser
@@ -51,7 +44,7 @@ fun MainScaffold(
 
     val items = listOf(
         BottomItem("home", "Inicio", R.drawable.ic_home),
-        BottomItem( "calendar","Calendario", R.drawable.baseline_calendar_month_24),
+        BottomItem("calendar", "Calendario", R.drawable.baseline_calendar_month_24),
         BottomItem("payments", "Pagos", R.drawable.ic_payments),
         BottomItem("profile", "Perfil", R.drawable.ic_profile)
     )
@@ -64,9 +57,7 @@ fun MainScaffold(
                 currentRoute = backEntry?.destination?.route,
                 onSelect = { route ->
                     navController.navigate(route) {
-                        popUpTo(navController.graph.findStartDestination().id) {
-                            saveState = true
-                        }
+                        popUpTo(navController.graph.findStartDestination().id) { saveState = true }
                         launchSingleTop = true
                         restoreState = true
                     }
@@ -81,6 +72,7 @@ fun MainScaffold(
             modifier = Modifier.padding(innerPadding)
         ) {
 
+            // HOME
             composable("home") {
                 HomeScreen(
                     paddingValues = innerPadding,
@@ -89,10 +81,10 @@ fun MainScaffold(
                 )
             }
 
-
+            // CALENDARIO
             composable("calendar") { CalendarScreen() }
 
-            //  Agregar parqueadero
+            // AGREGAR PARQUEADERO
             composable("addParking") {
                 AddParkingScreen(
                     onBack = { navController.popBackStack() },
@@ -100,51 +92,72 @@ fun MainScaffold(
                 )
             }
 
-            // Pagos (dejas tus pantallas como ya las tenías)
+            // --- PAGOS ---
             composable("payments") {
-                PaymentsScreen(
-                    daysLeft = 20,
-                    balance = 38000,
-                    onMonthly = { navController.navigate("payments/monthly") },
-                    onRecharge = { navController.navigate("payments/recharge") },
-                    onHistory = { navController.navigate("payments/history") }
+                PaymentScreen(
+                    navigateToTopUp = { navController.navigate("topup") },
+                    navigateToHistory = { navController.navigate("payments/history") },
+                    openMonthlyMethods = { price ->
+                        navController.navigate("paymethods/monthly/$price")
+                    }
                 )
             }
 
-
-
-
-            composable("payments/monthly") {
-                MonthlyPaymentScreen(
-                    currentPlan = "Mensualidad vehículo",
-                    price = 120000,
-                    dueInDays = 20,
+            // Recargar saldo
+            composable("topup") {
+                TopUpScreen(
                     onBack = { navController.popBackStack() },
-                    onSelectMethod = { navController.navigate("payments/methods") }
+                    openMethods = { amount ->
+                        navController.navigate("paymethods/topup/$amount")
+                    }
                 )
             }
 
-            composable("payments/recharge") {
-                RechargeBalanceScreen(
-                    currentBalance = 38000,
-                    onBack = { navController.popBackStack() },
-                    onSelectMethod = { navController.navigate("payments/methods") }
-                )
-            }
-
+            // Historial de pagos
             composable("payments/history") {
-                PaymentHistoryScreen(
-                    onBack = { navController.popBackStack() }
+                PaymentHistoryScreen(onBack = { navController.popBackStack() })
+            }
+
+            // Paga aquí (métodos) para TOPUP
+            composable(
+                route = "paymethods/topup/{amount}",
+                arguments = listOf(navArgument("amount") { type = NavType.LongType })
+            ) { backStackEntry ->
+                val amount = backStackEntry.arguments?.getLong("amount") ?: 0L
+                PaymentMethodScreen(
+                    onBack = { navController.popBackStack() },
+                    onSelect = { method ->
+                        // Recarga “demo”
+                        FakeWallet.balance += amount
+                        FakePayments.events.add(
+                            PaymentEvent(type = "TOPUP", method = method, amount = amount)
+                        )
+                        navController.popBackStack() // volver a TopUp
+                    }
                 )
             }
 
-            composable("payments/methods") {
-                PaymentMethodsSheet(
-                    onBack = { navController.popBackStack() }
+            // Paga aquí (métodos) para MENSUALIDAD
+            composable(
+                route = "paymethods/monthly/{price}",
+                arguments = listOf(navArgument("price") { type = NavType.LongType })
+            ) { backStackEntry ->
+                val price = backStackEntry.arguments?.getLong("price") ?: 0L
+                PaymentMethodScreen(
+                    onBack = { navController.popBackStack() },
+                    onSelect = { method ->
+                        // Extiende plan +30 días (demo) y registra en historial
+                        val base = max(System.currentTimeMillis(), FakeWallet.planExpiresAt)
+                        FakeWallet.planExpiresAt = base + TimeUnit.DAYS.toMillis(30)
+                        FakePayments.events.add(
+                            PaymentEvent(type = "MONTHLY", method = method, amount = price)
+                        )
+                        navController.popBackStack() // volver a Payments
+                    }
                 )
             }
 
-            // Perfil
+            // PERFIL
             composable("profile") {
                 ProfileScreen(
                     name = userName,
@@ -157,6 +170,7 @@ fun MainScaffold(
                 )
             }
 
+            // EDITAR PERFIL
             composable("editProfile") {
                 EditProfileScreen(
                     initialName = userName,
@@ -184,7 +198,7 @@ private fun BottomBar(
         modifier = Modifier
             .fillMaxWidth()
             .height(60.dp)
-            .background(Blue) // Usa tu color definido en Theme
+            .background(Blue) // tu color de tema
             .padding(horizontal = 28.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
@@ -203,3 +217,4 @@ private fun BottomBar(
         }
     }
 }
+

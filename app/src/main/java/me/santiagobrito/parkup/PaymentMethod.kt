@@ -1,54 +1,86 @@
 package me.santiagobrito.parkup
+
+import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+
+
+enum class PayMethod { PSE, NEQUI, CARD, EFFECTY }
+
+/** PANTALLA COMPLETA “Paga aquí” */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PaymentMethodsSheet(onBack: () -> Unit) {
-    Column(Modifier.fillMaxSize().padding(20.dp)) {
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, null) }
-            Text("Paga aquí", fontWeight = FontWeight.Bold, color = GrayDark)
+fun PaymentMethodScreen(
+    onBack: () -> Unit,
+    onSelect: (PayMethod) -> Unit
+) {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Paga aquí") },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+                    }
+                }
+            )
         }
-        Spacer(Modifier.height(12.dp))
-
-
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-            Image(painterResource(R.drawable.ic_pse), contentDescription = "PSE", modifier = Modifier.size(64.dp))
-            Image(painterResource(R.drawable.ic_nequi), contentDescription = "Nequi", modifier = Modifier.size(64.dp))
+    ) { padding ->
+        Column(
+            Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(horizontal = 20.dp, vertical = 8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Spacer(Modifier.height(8.dp))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+                PayIcon(R.drawable.ic_pse, "PSE") { onSelect(PayMethod.PSE) }
+                PayIcon(R.drawable.ic_nequi, "Nequi") { onSelect(PayMethod.NEQUI) }
+            }
+            Spacer(Modifier.height(16.dp))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+                PayIcon(R.drawable.ic_payments, "Tarjeta") { onSelect(PayMethod.CARD) }
+                PayIcon(R.drawable.ic_efecty, "Efecty") { onSelect(PayMethod.EFFECTY) }
+            }
+            Spacer(Modifier.height(24.dp))
+            Text(
+                text = "Selecciona un método para continuar. (Integración real se hace luego)",
+                color = Color(0xFF666666),
+                style = MaterialTheme.typography.bodySmall
+            )
         }
-        Spacer(Modifier.height(24.dp))
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-            Image(painterResource(R.drawable.ic_tarjeta), contentDescription = "Tarjeta", modifier = Modifier.size(64.dp))
-            Image(painterResource(R.drawable.ic_efecty), contentDescription = "Efecty", modifier = Modifier.size(64.dp))
-        }
-
-        Spacer(Modifier.height(24.dp))
-        Text("Selecciona un método para continuar. (Integración real se hace luego)", color = GrayText)
     }
 }
+
+@Composable
+private fun PayIcon(
+    @DrawableRes res: Int,
+    label: String,
+    onClick: () -> Unit
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .width(120.dp)
+            .clickable(onClick = onClick)
+            .padding(8.dp)
+    ) {
+        Image(painter = painterResource(id = res), contentDescription = label, modifier = Modifier.size(64.dp))
+        Spacer(Modifier.height(6.dp))
+        Text(label, color = MaterialTheme.colorScheme.onSurface)
+    }
+}
+
+
