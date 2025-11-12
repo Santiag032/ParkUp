@@ -1,11 +1,14 @@
 package me.santiagobrito.parkup
 
-
 data class Booking(
     val id: String = "",
     val userId: String = "",
     val parkingId: String = "",
     val startAt: Long = 0L,
     val endAt: Long = 0L,
-    val status: String = "reserved"
+    val status: String = "reserved",   // reserved | cancelled
+    val createdAt: Long = 0L,
+    val cancelledAt: Long? = null
 )
+
+
